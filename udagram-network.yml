@@ -4,7 +4,7 @@ Description: >
 
 Parameters:
   EnvironmentName:
-    Description: An environment name of the Udacity web app.
+    Description: An environment name of the Udagram web app.
     Type: String
   
   VPCCidrRange:
@@ -13,22 +13,22 @@ Parameters:
     Default: 10.0.0.0/16
 
   PublicSubnet1CIDR:
-    Description: IP range for PubS1
+    Description: IP range for Pubic Subnet 1
     Type: String
     Default: 10.0.0.0/24
 
   PublicSubnet2CIDR:
-    Description: IP range for PubS2
+    Description: IP range for Public Subnet 2
     Type: String
     Default: 10.0.1.0/24
 
   PrivateSubnet1CIDR:
-    Description: IP range for PriS1
+    Description: IP range for Private Subnet 1
     Type: String
     Default: 10.0.2.0/24
 
   PrivateSubnet2CIDR:
-    Description: IP range for PriS2
+    Description: IP range for Private Subnet 2
     Type: String
     Default: 10.0.3.0/24
 
@@ -38,8 +38,7 @@ Resources:
     Properties:
       CidrBlock: 
         Ref: VPCCidrRange
-      EnableDnsSupport: false
-      EnableDnsHostnames: false
+      EnableDnsHostnames: true
       InstanceTenancy: dedicated
       Tags:
         - Key: Name
@@ -63,46 +62,50 @@ Resources:
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref UdagramVPC
-      CidrBlock: !Ref PublicSubnet1CIDR
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Subnet 1
+          Value: !Sub ${EnvironmentName} Public Subnet 1 in AZ1
+      VpcId: !Ref UdagramVPC
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref UdagramVPC
-      CidrBlock: !Ref PublicSubnet2CIDR
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Subnet 2
+          Value: !Sub ${EnvironmentName} Public Subnet 2 in AZ2
+      VpcId: !Ref UdagramVPC
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: UdagramVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
       CidrBlock: 
         Ref: PrivateSubnet1CIDR
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Subnet 1
-        
+          Value: !Sub ${EnvironmentName} Private Subnet 1 in AZ1
+      VpcId:
+        Ref: UdagramVPC
+
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: UdagramVPC
+      AvailabilityZone: !Select [ 2, !GetAZs '' ]
       CidrBlock: 
         Ref: PrivateSubnet2CIDR
-      AvailabilityZone: !Select [ 2, !GetAZs '' ]
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Subnet 2
+          Value: !Sub ${EnvironmentName} Private Subnet 2 in AZ2
+      VpcId:
+        Ref: UdagramVPC
 
   NatGateway1:
     Type: AWS::EC2::NatGateway
@@ -112,7 +115,6 @@ Resources:
       Tags: 
         - Key: Name
           Value: !Sub ${EnvironmentName} NatGateway 1
-
   NatGateway2:
     Type: AWS::EC2::NatGateway
     Properties:
@@ -139,7 +141,6 @@ Resources:
       Tags: 
         - Key: Name
           Value: !Sub ${EnvironmentName} Elastic IP NagGateway 2
-
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -175,7 +176,6 @@ Resources:
       SubnetId:
         Ref: PublicSubnet2
   
-
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties: 
@@ -223,7 +223,7 @@ Resources:
 
 Outputs: 
   UdagramVPC: 
-    Description: A reference to the created VPC
+    Description: A reference to the created Virtual Private Cloud
     Value: !Ref UdagramVPC
     Export:
       Name: !Sub ${EnvironmentName}-VPCID
@@ -263,21 +263,3 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: !Sub ${EnvironmentName}-PRI2-SN
-
-  VPCPublicRouteTable:
-    Description: Public Routing
-    Value: !Ref PublicRouteTable
-    Export:
-      Name: !Sub ${EnvironmentName}-PUB-RT
-
-  VPCPrivateRouteTable1:
-    Description: Private Routing AZ1
-    Value: !Ref PrivateRouteTable1
-    Export:
-      Name: !Sub ${EnvironmentName}-PRI1-RT
-
-  VPCPrivateRouteTable2:
-    Description: Private Routing AZ2
-    Value: !Ref PrivateRouteTable2
-    Export:
-      Name: !Sub ${EnvironmentName}-PRI2-RT
