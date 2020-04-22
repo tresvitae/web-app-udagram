@@ -151,6 +151,31 @@ Resources:
       TargetGroupARNs:
       - Ref: WebTargetGroup
 
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-003634241a8fcdec0
+      InstanceType: t3.small
+#      KeyName: UdagramKeyPair
+      BlockDeviceMappings:
+          - DeviceName: "/dev/sdk"
+            Ebs:
+              VolumeSize: '10'
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PUB2-SN"
+          GroupSet:
+          - Ref: WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Bastion Host
+  #ALSO
+  #   -Students can use AWS Parameter Store to save sensitive data, such as credentials to showcase their attention to security.
+  #   -Students can use CloudWatch Alarms and CloudWatch custom metrics to showcase their performance and monitoring skills.
+  
 Outputs:
   WebLoadBalancer:
     Description: The load balancer URL
