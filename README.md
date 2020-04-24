@@ -8,8 +8,8 @@ The task is to deploy an application (Apache Web Server) with high availability 
 For high availability, project is tailored with leverage auto scaling parameters. Should not be any single point of failure.
 
 To deploy this infrastructure there is a helper script included in the repository. It can be used like this: 
-1.	`aws cloudformation create-stack --stack-name <STACKNAME>  --template-body file://network.yml --parameters file://params.json --region=us-west-2` 
-2.	`aws cloudformation create-stack --stack-name <STACKNAME>  --template-body file://server.yml --parameters file://params.json --region=us-west-2` 
+1.	`aws cloudformation create-stack --stack-name udagram-network --template-body file://udagram-network.yml --parameters file://udagram-network-parameters.json --region=us-west-2`
+2.	`aws cloudformation create-stack --stack-name udagram-server --template-body file://udagram-server.yml --parameters file://udagram-server-parameters.json --region=us-west-2`
 
 
 Diagram that present infrastructure of the project:
