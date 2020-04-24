@@ -8,11 +8,34 @@ Parameters:
     Type: String
           
 Resources:
+  UdacityS3ReadOnlyEC2:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:Get*'
+                  - 's3:List*'
+                Resource: '*'
   ProfileWithRolesForOurApp:
     Type: AWS::IAM::InstanceProfile
     Properties: 
       Roles:
-        - UdacityS3ReadOnlyEC2
+        - !Ref UdacityS3ReadOnlyEC2
   
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -82,8 +105,7 @@ Resources:
           unzip -o udacity.zip
       SecurityGroups: 
         - Ref: WebSecurityGroup
-      InstanceType: 
-        Ref: t3.small
+      InstanceType: t3.small
 #      KeyName: UdagramKeyPair
 
   WebLoadBalancer:
@@ -134,8 +156,8 @@ Resources:
       Protocol: HTTP
       UnhealthyThresholdCount: 5
       VpcId: 
-      -  Fn::ImportValue:
-          Fn::Sub: "${EnvironmentName}-VPCID"
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
 
   WebAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -172,9 +194,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Bastion Host
-  #ALSO
-  #   -Students can use AWS Parameter Store to save sensitive data, such as credentials to showcase their attention to security.
-  #   -Students can use CloudWatch Alarms and CloudWatch custom metrics to showcase their performance and monitoring skills.
   
 Outputs:
   WebLoadBalancer:
