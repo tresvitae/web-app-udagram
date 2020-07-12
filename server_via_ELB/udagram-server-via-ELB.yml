@@ -1,0 +1,181 @@
+Description: >
+    Patryk Futa
+    Project 2 - High-availability web app using Elastic Load Balancer
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name of the project.
+    Type: String
+          
+Resources:
+  ProfileWithRolesForOurApp:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Roles:
+        - UdacityS3ReadOnlyEC2
+  
+#  LoadBalancerSecurityGroup:
+#    Type: AWS::EC2::SecurityGroup
+#    Properties:
+#      GroupDescription: Allow http to our load balancer
+#      VpcId:
+#        Fn::ImportValue:
+#          !Sub "${EnvironmentName}-VPCID"
+#      SecurityGroupIngress:
+#      - IpProtocol: tcp
+#        FromPort: 80
+#        ToPort: 80
+#        CidrIp: 0.0.0.0/0
+#      SecurityGroupEgress:
+#      - IpProtocol: tcp
+#        FromPort: 80
+#        ToPort: 80
+#        CidrIp: 0.0.0.0/0
+#      Tags:
+#        - Key: Name
+#          Value: ${EnvironmentName}
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to our hosts and SSH
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 0
+        ToPort: 65535
+        CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ${EnvironmentName}
+
+  WebLaunchConfig: 
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties: 
+      BlockDeviceMappings: 
+        - DeviceName: "/dev/sdk"
+          Ebs: 
+            VolumeSize: '10'
+      IamInstanceProfile:
+        Ref: ProfileWithRolesForOurApp
+      ImageId: ami-003634241a8fcdec0
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip awscli -y
+          apt-get install apache2 -y
+          systemctl start apache2.service
+          cd /var/www/html
+          aws s3 cp s3://udacity-demo-1/udacity.zip .
+          unzip -o udacity.zip
+      SecurityGroups: 
+        - Ref: WebSecurityGroup
+      InstanceType: 
+        Ref: t3.small
+      KeyName: UdagramKeyPair
+
+#  WebLoadBalancer:
+#    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+#    Properties:
+#      Subnets:
+#      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+#      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+#      SecurityGroups:
+#      - Ref: LoadBalancerSecurityGroup
+#      Tags:
+#      - Key: Name
+#        Value: !Sub ${EnvironmentName} Load Balancer
+
+#  WebListener:
+#    Type: AWS::ElasticLoadBalancingV2::Listener
+#    Properties:
+#      DefaultActions:
+#      - Type: forward
+#        TargetGroupArn:
+#          Ref: WebTargetGroup
+#      LoadBalancerArn:
+#        Ref: WebLoadBalancer
+#      Port: '80'
+#      Protocol: HTTP
+
+# WebListenerRule:
+#    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+#    Properties:
+#      Actions:
+#      - Type: forward
+#        TargetGroupArn: !Ref 'WebTargetGroup'
+#      Conditions:
+#      - Field: path-pattern
+#        Values: [/]
+#      ListenerArn: !Ref 'WebListener'
+#      Priority: 1
+
+#  WebTargetGroup:
+#    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+#    Properties:
+#      HealthCheckIntervalSeconds: 30
+#      HealthCheckPath: /
+#      HealthCheckProtocol: HTTP
+#      HealthCheckTimeoutSeconds: 5
+#      HealthyThresholdCount: 3
+#      Port: 80
+#      Protocol: HTTP
+#      UnhealthyThresholdCount: 5
+#      VpcId: 
+#      -  Fn::ImportValue:
+#          Fn::Sub: "${EnvironmentName}-VPCID"
+
+  WebAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+      - Fn::ImportValue: 
+          !Sub "${EnvironmentName}-PRIV-NETS"
+      LaunchConfigurationName:
+        Ref: WebLaunchConfig
+      MinSize: '1'
+      MaxSize: '3'
+      DesiredCapacity: '2'
+#      TargetGroupARNs:
+#      - Ref: WebTargetGroup
+
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-003634241a8fcdec0
+      InstanceType: t3.small
+      KeyName: UdagramKeyPair
+      BlockDeviceMappings:
+          - DeviceName: "/dev/sdk"
+            Ebs:
+              VolumeSize: '10'
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PUB2-SN"
+          GroupSet:
+          - Ref: WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Bastion Host
+  
+#Outputs:
+#  WebLoadBalancer:
+#    Description: The load balancer URL
+#    Value: !Join ["", ["http://", !GetAtt WebLoadBalancer.DNSName,]]
+#    Export:
+#      Name: !Sub ${EnvironmentName}-DNS-NAME

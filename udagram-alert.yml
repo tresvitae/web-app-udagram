@@ -1,0 +1,27 @@
+Description: >
+    Patryk Futa
+    Project 2 - High-availability web app
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name of the project.
+    Type: String
+          
+Resources:
+
+  AlarmHighTraffic:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: Send email about web servers with unusually high traffic
+      MetricName: NetworkOut
+      Namespace: AWS/EC2
+      Statistic: Sum
+      Unit: Gigabytes
+      EvaluationPeriods: '1'
+      Threshold: '10'
+      AlarmActions:
+        - !Ref WebServerScaleUpPolicy ARN
+      Dimensions:
+        - Name: AutoScalingGroupName LoadBalancerSecurityGroupLoadBalancerSecurityGroup
+          Value: !Ref WebServerGroup
+      ComparisonOperator: GreaterThanThreshold
