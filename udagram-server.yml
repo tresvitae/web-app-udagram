@@ -1,6 +1,6 @@
 Description: >
     Patryk Futa
-    Project 2 - High-availability web app
+    Project 2 - High-availability web app using Bastion host.
 
 Parameters:
   EnvironmentName:
@@ -8,6 +8,7 @@ Parameters:
     Type: String
           
 Resources:
+# Set IAM Roles to EC2 to read S3 Bucket
   UdacityS3ReadOnlyEC2:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -70,10 +71,10 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
-#      - IpProtocol: tcp
-#        FromPort: 22
-#        ToPort: 22
-#        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
       - IpProtocol: tcp
         FromPort: 0
@@ -93,6 +94,7 @@ Resources:
       IamInstanceProfile:
         Ref: ProfileWithRolesForOurApp
       ImageId: ami-003634241a8fcdec0
+#      KeyName: UdagramWebServer
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -106,7 +108,6 @@ Resources:
       SecurityGroups: 
         - Ref: WebSecurityGroup
       InstanceType: t3.small
-#      KeyName: UdagramKeyPair
 
   WebLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -150,7 +151,7 @@ Resources:
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckTimeoutSeconds: 25
       HealthyThresholdCount: 3
       Port: 80
       Protocol: HTTP
@@ -178,7 +179,7 @@ Resources:
     Properties:
       ImageId: ami-003634241a8fcdec0
       InstanceType: t3.small
-#      KeyName: UdagramKeyPair
+#      KeyName: UdagramBastionHost
       BlockDeviceMappings:
           - DeviceName: "/dev/sdk"
             Ebs:

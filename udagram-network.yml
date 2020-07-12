@@ -13,22 +13,22 @@ Parameters:
     Default: 10.0.0.0/16
 
   PublicSubnet1CIDR:
-    Description: IP range for Pubic Subnet 1
+    Description: IP range of 10.0.0.0 - 10.0.0.255 for Pubic Subnet 1
     Type: String
     Default: 10.0.0.0/24
 
   PublicSubnet2CIDR:
-    Description: IP range for Public Subnet 2
+    Description: IP range of 10.0.1.0 - 10.0.1.255 for Public Subnet 2
     Type: String
     Default: 10.0.1.0/24
 
   PrivateSubnet1CIDR:
-    Description: IP range for Private Subnet 1
+    Description: IP range of 10.0.2.0 - 10.0.2.255 for Private Subnet 1
     Type: String
     Default: 10.0.2.0/24
 
   PrivateSubnet2CIDR:
-    Description: IP range for Private Subnet 2
+    Description: IP range of 10.0.3.0 - 10.0.3.255 for Private Subnet 2
     Type: String
     Default: 10.0.3.0/24
 
@@ -42,22 +42,20 @@ Resources:
       InstanceTenancy: dedicated
       Tags:
         - Key: Name
-          Value: ${EnvironmentName}
+          Value: !Ref EnvironmentName
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: ${EnvironmentName}
+          Value: !Ref EnvironmentName
         
-  VPCAttachGateway:
+  InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId:
-        Ref: UdagramVPC
-      InternetGatewayId:
-        Ref: InternetGateway
+      VpcId: !Ref UdagramVPC
+      InternetGatewayId: !Ref InternetGateway
  
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -127,72 +125,62 @@ Resources:
 
   EIPNatGateway1:
     Type: AWS::EC2::EIP
-    DependsOn: VPCAttachGateway
+    DependsOn: InternetGatewayAttachment
     Properties: 
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Elastic IP NagGateway 1
+          Value: !Sub ${EnvironmentName} Elastic IP for NagGateway 1
   EIPNatGateway2:
     Type: AWS::EC2::EIP
-    DependsOn: VPCAttachGateway
+    DependsOn: InternetGatewayAttachment
     Properties: 
       Domain: vpc
       Tags: 
         - Key: Name
-          Value: !Sub ${EnvironmentName} Elastic IP NagGateway 2
+          Value: !Sub ${EnvironmentName} Elastic IP for NagGateway 2
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags: 
-        - Key: Name 
+        - Key: Name
           Value: !Sub ${EnvironmentName} Public Route Table
       VpcId:
         Ref: UdagramVPC
   PublicRoute: 
     Type: AWS::EC2::Route
-    DependsOn: VPCAttachGateway
+    DependsOn: InternetGatewayAttachment
     Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
+      GatewayId: !Ref InternetGateway
 
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
 
   PublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
   
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties: 
-      VpcId:
-        Ref: UdagramVPC
+      VpcId: !Ref UdagramVPC
       Tags: 
         - Key: Name 
           Value: !Sub ${EnvironmentName} Private Route (AZ1)
-  
   PrivateRoute1:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1
+      RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NatGateway1
+      NatGatewayId: !Ref NatGateway1
 
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
